@@ -1,0 +1,26 @@
+#!/usr/bin/perl -w
+
+	use strict;
+	use warnings;
+	use Data::Dump qw(pp);
+	use	Text::HandyMarkup;
+	
+	my	$source = qx{ cat correct-variations.txt };
+	
+	print "START\n";
+	
+	my	$templates	= 
+	{
+		'~'		=> { beg=>'<div class="%t" style="%p">' , end=>'</div>' },
+		t04		=> { beg=>'<a class="1" href="%p">', end=>'</a>' },
+		t14		=> { beg=>'<a class="2" href="%p">', end=>'</a>' },
+	};
+
+	my	$hm	= Text::HandyMarkup->new( $templates );
+	my	$result = $hm->parse( $source );
+	
+	print "PARSED\n";
+	
+	print pp($hm), "\n";
+	print $result, "\n";
+	

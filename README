@@ -1,0 +1,55 @@
+NAME
+
+    Text::HandyMarkup - Handy markup parser & rewriter
+
+     #------------------------------------------------------
+     # (C) Daniel Peder & Infoset s.r.o., all rights reserved
+     # http://www.infoset.com, Daniel.Peder@infoset.com
+     #------------------------------------------------------
+
+     $Revision: 1.2 $
+     $Date: 2005/01/10 13:34:31 $
+
+METHODS
+
+    new ( [ $templates ] ) : blessed
+    set_template ( $tag_name, $beg_template, $end_template ) : true
+    set_templates ( $templates_hashref ) : true
+    tag_open ( $tag_name [, $params ] ) : true
+    tag_close ( $tag_name ) : true
+    text_insert ( $text_body ) : true
+    tag_rewrite ( $template_name, $tag_name [, $params] ) : string
+    push_tag ( $tag_name ) : number
+        Return number of times $tag_name was pushed.
+
+    pop_tag ( ) : string
+        Return tag name or undef if there was no pushed tag.
+
+    get_top_tag ( ) : string
+        Return name of last pushed tag or ''.
+
+    is_open_tag ( [ $tag_name ] ) : bool
+        With $tag_name - number of times was specified tag open.
+
+        Without $tag_name - number of all tag open.
+
+    result_append ( $text ) : true
+    parse ( $data ) : string
+        Return string with tags rewritten according to defined templates.
+
+         - beg-tag without parameters :
+           [tag_name:
+ 
+         - beg-tag with parameters :
+           [tag_name=parameter_value_without_whitespaces :
+           [tag_name="parameter value with spaces and single quotes ' inside":
+           [tag_name='parameter value with spaces and double quotes " inside':
+   
+         - end-tag un-named :
+           :]
+
+         - end-tag named :
+           :tag_name]
+ 
+TODO
+

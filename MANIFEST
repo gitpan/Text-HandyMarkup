@@ -1,0 +1,15 @@
+ABOUT/00-about
+ABOUT/correct-variations.txt
+ABOUT/invalid-variations.txt
+EXAMPLES/correct-variations.txt
+EXAMPLES/invalid-variations.txt
+EXAMPLES/t000-new
+EXAMPLES/t001-parse
+EXAMPLES/tx
+HandyMarkup.pm
+Makefile.PL
+MANIFEST			This list of files
+RCS/HandyMarkup.pm,v
+README
+t/00-01_use.t
+META.yml                                 Module meta-data (added by MakeMaker)

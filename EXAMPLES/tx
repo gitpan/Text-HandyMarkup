@@ -1,0 +1,222 @@
+#!/usr/bin/perl
+
+#my	$filename = 'invalid-variations.txt';
+my	$filename = 'correct-variations.txt';
+
+use IO::File::String;
+my $data = IO::File::String->new('< '.$filename)->load;
+
+my	$t = Text::HandyMarkup->new;
+	$t->set_template( '~','<div class="%t" style="%p">','</div>');
+	$t->set_template( t01,'<h class="%p">','</h>');
+	$t->set_template( t02,'<a href="%p">','</a>');
+	$t->set_templates({ 
+		t04 => { beg=>'<a class="1" href="%p">', end=>'</a>' },
+		t14 => { beg=>'<a class="2" href="%p">', end=>'</a>' },
+	});
+
+	$t->parse( $data );
+	
+	print $t->{result}, "\n";
+
+
+package Text::HandyMarkup;
+
+use warnings;
+
+sub new {
+	
+	my	$self = {
+		stack	=> [],
+		names	=> {},
+		defs	=> { '~' => { beg=>'{tag:%t %p}', end=>'{/tag:%t %p}' } },
+		result	=> '',
+	};
+	
+	return bless $self
+}
+
+sub set_template {
+	my(	$self, $tag_name, $beg_template, $end_template ) = @_;
+	
+	$self->{defs}{$tag_name} = { beg => $beg_template, end => $end_template };
+}
+
+sub set_templates {
+	my(	$self, $templates_hashref ) = @_;
+	
+	while( my($key,$val)=each(%$templates_hashref)) {
+		$self->{defs}{$key} = $val;
+	}
+}
+
+sub tag_open {
+	my(	$self, $tag_name, $params ) = @_;
+	
+	$self->push_tag( $tag_name, $params );
+	my $tag_string = $self->tag_rewrite( beg => $tag_name, $params );
+	$self->result_append( $tag_string );
+	return 1;
+}
+
+sub tag_close {
+	my(	$self, $tag_name ) = @_;
+	
+	if( defined( $tag_name ) && length( $tag_name ) ) {
+		# pop named tag
+		if( $self->is_open_tag( $tag_name )) {
+			my $pop_tag;
+			do {
+				$pop_tag = $self->pop_tag();
+				my $tag_string = $self->tag_rewrite( end => $pop_tag );
+				$self->result_append( $tag_string );
+			}	while $tag_name ne $pop_tag;
+		}
+	}
+	else {
+		$tag_name = $self->pop_tag();
+		my $tag_string = $self->tag_rewrite( end => $tag_name );
+		$self->result_append( $tag_string );
+	}
+}
+
+sub text_insert {
+	my(	$self, $text_body ) = @_;
+	$self->result_append( $text_body );
+}
+
+sub tag_rewrite {
+	my(	$self, $template_name, $tag_name, $params ) = @_;
+	
+	return undef unless defined( $tag_name ) && length( $tag_name );
+	$params = '' unless defined( $params ) && length( $params );
+	
+#	my	$template = $self->get_template( $tag_name, $template_name );
+	my	$template;
+	if( exists $self->{defs}{$tag_name} ) {	# tag template
+		$template = $self->{defs}{$tag_name}{$template_name};
+	}
+	elsif( exists $self->{defs}{'~'} ){ 	# default template
+		$template = $self->{defs}{'~'}{$template_name};
+	}
+	unless( defined $template ) {
+		if( 'beg' eq $template_name ) {
+			$template = '[%t%p:';
+		}
+		elsif( 'end' eq $template_name ) {
+			$template = ':%t]';
+		}
+		else {
+			$template = '';
+		}
+	}
+	else {
+		unless( $params	=~ s{^(['"])(.*)\1$}{$2}s ) {	# drop lead/trail quotes pair
+			$params =~ s{\s+$}{}s;						# or drop trailing spaces
+		}
+	}
+	if( $template && $template =~ /%[%tp]/ ) {	# if there is anything to replace
+		$template =~ s{%t}{$tag_name}gs;
+		$template =~ s{%p}{$params}gs ;
+		$template =~ s{%%}{%}gs;
+	}
+	
+	return $template;
+}
+
+# return number of times B< $tag_name > was pushed.
+#
+sub push_tag {
+	my(	$self, $tag_name ) = @_;
+	
+	return 0 unless defined( $tag_name ) && length( $tag_name );
+	push @{$self->{stack}}, $tag_name;
+	$self->{names}{$tag_name}++;
+	return $self->{names}{$tag_name};
+}
+
+sub pop_tag {
+	my(	$self ) = @_;
+	
+	my $tag_name = pop @{$self->{stack}};
+	if( $tag_name ) {
+		$self->{names}{$tag_name}--;
+		delete $self->{names}{$tag_name} if $self->{names}{$tag_name} <= 0;
+	}
+	
+	return $tag_name;
+}
+
+sub get_top_tag {
+	my(	$self ) = @_;
+	
+	return $self->{stack}[-1] if @{$self->{stack}};
+	return '';
+}
+
+sub is_open_tag {
+	my(	$self, $tag_name ) = @_;
+	
+	return 0 unless defined($tag_name) && exists( $self->{names}{$tag_name} );
+	return $self->{names}{$tag_name};
+}
+
+sub result_append {
+	my(	$self, $text ) = @_;
+	
+	$self->{result} .= $text if defined $text;
+	
+	return 1;
+}
+
+sub parse {
+	my(	$self, $data ) = @_;
+
+	# predefined regex - symbolic description: (leading-text)?(beg-tag|end-tag)|trailing-text
+	#
+		# my $re = qr{(.*?)(?:\[(\w+)(?:=((?:".*?")|(?:'.*?')|\S+\s+)\s*|\s*):|:(\w*)\])|(.+)}s;
+		my $re = qr{
+
+			# $1 # leading text followed by beg/end tag
+			(.*?)
+			
+			(?:
+			
+				# $2,$3 # beg-tag with optional parameter
+				\[(\w+)(?:=((?:".*?")|(?:'.*?')|\S+\s+)\s*|\s*):
+				
+				|
+				
+				# $4 # end-tag
+				:(\w*)\]
+			)
+			
+			|
+			
+			# $5 # trailing text, unless beg/end tag found
+			(.+)
+			
+		}sx;
+
+	while( $data =~ /$re/cgos ) {
+
+		my( $content, $beg_tag, $param, $end_tag, $content2 )=($1,$2,$3,$4,$5);
+	
+		if( $content ) {
+			$self->text_insert( $content );
+		}
+		if( $content2 ) {
+			$self->text_insert( $content2 );
+		}
+		if( defined $beg_tag ){
+			$self->tag_open( $beg_tag, $param );
+		}
+		elsif( defined $end_tag ){
+			$self->tag_close( $end_tag );
+		}
+	}
+	
+	$self->tag_close() while $self->get_top_tag();
+}
+
+1;

@@ -1,0 +1,61 @@
+
+single lines
+
+[t01::]
+[t02:a:]
+[t03 :a:]
+[t04=p4 ::]
+[t05=p5 :a:]
+[t06="p6" ::]
+[t07="p7" :a:]
+[t08="p8"::]
+[t09="p9":a:]
+
+multi lines
+
+[t11:
+:]
+
+[t12:
+a
+:]
+
+[t13 :
+a
+:]
+
+[t14=p4 :
+:]
+
+[t15=p5 :
+a
+:]
+
+[t16="p6" :
+:]
+
+[t17="p7" :
+a
+:]
+
+[t18="p8":
+:]
+
+[t19="p9":
+a
+:]
+
+[/]
+
+[p1:
+	long text para
+	multi lined string
+	long text para
+	multi lined string
+	long text para
+	multi lined string
+	long text para
+	multi lined string
+:p1]
+
+end file

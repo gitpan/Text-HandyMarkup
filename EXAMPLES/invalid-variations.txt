@@ -1,0 +1,18 @@
+
+unclosed tag
+
+[t1: t1-text [t2: t2-text :]
+
+crosslevel closing
+
+[t1: t1-text [t2: t2-text :t1] t3-text
+
+overlapped closing
+
+[t1: t1-text [t2: t2-text :t1]  t3-text :t2]
+
+[unclosed1: unclosed1-text
+
+[unclosed2: unclosed2-text
+
+end text
